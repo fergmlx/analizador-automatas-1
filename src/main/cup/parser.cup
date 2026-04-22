@@ -1,0 +1,47 @@
+package com.analizador;
+
+import java_cup.runtime.*;
+
+parser code {:
+    public void report_error(String message, Object info) {
+        System.err.println("Error sintáctico: " + message);
+    }
+:};
+
+/* ── Terminales (tokens del lexer) ── */
+terminal IF, ELSE, WHILE;
+terminal MAS, MENOS, POR, DIV;
+terminal ASIGN, IGUAL;
+terminal LPAREN, RPAREN, PUNTOYCOMA;
+terminal String  ID;
+terminal Integer NUMERO;
+
+/* ── No terminales ── */
+non terminal sentencia;
+non terminal programa;
+non terminal Integer expr;
+
+/* ── Precedencia (menor a mayor) ── */
+precedence left MAS, MENOS;
+precedence left POR, DIV;
+
+/* ── Gramática ── */
+programa ::= sentencia
+           | programa sentencia
+           ;
+
+sentencia ::= ID:i ASIGN expr:e PUNTOYCOMA
+            {:  System.out.println("Asignación: " + i); :}
+            | IF LPAREN expr RPAREN sentencia
+            | WHILE LPAREN expr RPAREN sentencia
+            | expr:e PUNTOYCOMA
+            ;
+
+expr ::= expr:a MAS  expr:b  {: RESULT = (Integer)a + (Integer)b; :}
+       | expr:a MENOS expr:b {: RESULT = (Integer)a - (Integer)b; :}
+       | expr:a POR  expr:b  {: RESULT = (Integer)a * (Integer)b; :}
+       | expr:a DIV  expr:b  {: RESULT = (Integer)a / (Integer)b; :}
+       | LPAREN expr:e RPAREN {: RESULT = e; :}
+       | NUMERO:n             {: RESULT = n; :}
+       | ID:i                 {: RESULT = 0; :}
+       ;
