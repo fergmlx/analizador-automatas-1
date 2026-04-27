@@ -65,6 +65,62 @@ public class Analizador {
         System.out.println("-> OK: " + nombreVar + " $ " + valorStr + " [" + tipo + "]");
     }
     
+    public String procesarLineaFrame(String linea) throws Exception {
+        linea = linea.replaceAll("//.*", "").trim();
+        if (linea.isEmpty()) return "";
+
+        if (linea.endsWith("+") || linea.startsWith("+") ||
+            linea.endsWith("-") || linea.startsWith("-") ||
+            linea.endsWith("*") || linea.startsWith("*") ||
+            linea.endsWith("/") || linea.startsWith("/")) {
+            throw new FaltaOperandoException(linea);
+        }
+
+        if (!linea.contains(SIMBOLO_ASIGNACION)) {
+            evaluarExpresion(linea, ""); 
+            return "";
+        }
+
+        String[] partes = linea.split("\\" + SIMBOLO_ASIGNACION);
+        String ladoIzquierdo = partes[0].trim();
+        String expresion = partes.length > 1 ? partes[1].trim() : "";
+        
+        if (expresion.isEmpty()) {
+            throw new Exception("ERROR SINTÁCTICO: Falta valor después de la asignación '$'.");
+        }
+        
+        String tipo = "";
+        String nombreVar = "";
+        
+        String[] dec = ladoIzquierdo.split(" ");
+        if (dec.length == 2) {
+            tipo = dec[0];
+            nombreVar = dec[1];
+        } else if (dec.length == 1) {
+            nombreVar = dec[0];
+            if (!tablaSimbolos.containsKey(nombreVar)) {
+                throw new VariableNoDeclaradaException(nombreVar);
+            }
+            
+            Object varGuardada = tablaSimbolos.get(nombreVar);
+            if (varGuardada instanceof Comp) tipo = "comp";
+            else if (varGuardada instanceof Med) tipo = "med";
+            else if (varGuardada instanceof Pal) tipo = "Pal";
+        } else {
+            throw new Exception("ERROR SINTÁCTICO: Declaración mal formada en '" + ladoIzquierdo + "'");
+        }
+        
+        Object valorFinal = evaluarExpresion(expresion, tipo);
+        tablaSimbolos.put(nombreVar, valorFinal);
+        
+        String valorStr = "";
+        if (valorFinal instanceof Comp) valorStr = String.valueOf(((Comp)valorFinal).getValor());
+        if (valorFinal instanceof Med) valorStr = String.valueOf(((Med)valorFinal).getValor());
+        if (valorFinal instanceof Pal) valorStr = "\"" + ((Pal)valorFinal).getValor() + "\"";
+
+        return "-> OK: " + nombreVar + " $ " + valorStr + " [" + tipo + "]";
+    }
+    
     private Object evaluarExpresion(String expresion, String tipoEsperado) throws Exception {
         String operador = "";
         String regexSplit = "";
