@@ -2,11 +2,15 @@ package com.emulador;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Analizador {
     
     private Map<String, Object> tablaSimbolos = new HashMap<>();
-    private static final String REGEX_COMENTARIO = "//.*";
+    private static final String REGEX_COMENTARIO = "%.*";
     private static final String SIMBOLO_ASIGNACION = "$";
     
     public void procesarLinea(String linea) throws Exception {
@@ -66,7 +70,7 @@ public class Analizador {
     }
     
     public String procesarLineaFrame(String linea) throws Exception {
-        linea = linea.replaceAll("//.*", "").trim();
+        linea = linea.replaceAll(REGEX_COMENTARIO, "").trim();
         if (linea.isEmpty()) return "";
 
         if (linea.endsWith("+") || linea.startsWith("+") ||
@@ -200,5 +204,35 @@ public class Analizador {
         }
         
         throw new TiposIncompatiblesException("No se pueden operar tipos diferentes.");
+    }
+    
+    public List<FilaToken> obtenerTokensLexicos(String linea) {
+        List<FilaToken> tokensDetectados = new ArrayList<>();
+        
+        linea = linea.replaceAll(REGEX_COMENTARIO, "").trim();
+        if (linea.isEmpty()) return tokensDetectados;
+
+        String regex = "(\"[^\"]*\")|(\\bcomp\\b|\\bmed\\b|\\bPal\\b)|([a-zA-Z][a-zA-Z0-9]*)|(\\d+\\.\\d+)|(\\d+)|([\\$\\+\\-\\*\\/])";
+        Matcher matcher = Pattern.compile(regex).matcher(linea);
+
+        while (matcher.find()) {
+            String lexema = matcher.group();
+            
+            if (matcher.group(1) != null) {
+                tokensDetectados.add(new FilaToken("Cadena", lexema, "Texto entre comillas", "no"));
+            } else if (matcher.group(2) != null) {
+                tokensDetectados.add(new FilaToken("Tipo de dato", lexema, "Letras seguidas de letras", "sí"));
+            } else if (matcher.group(3) != null) {
+                tokensDetectados.add(new FilaToken("Identificador", lexema, "Letra seguida de letra o digito", "no"));
+            } else if (matcher.group(4) != null) {
+                tokensDetectados.add(new FilaToken("Decimal (med)", lexema, "Digitos con punto decimal", "no"));
+            } else if (matcher.group(5) != null) {
+                tokensDetectados.add(new FilaToken("Entero (comp)", lexema, "Digito seguido de más digitos", "no"));
+            } else if (matcher.group(6) != null) {
+                tokensDetectados.add(new FilaToken(lexema, lexema, "Signo " + lexema, "sí"));
+            }
+        }
+        
+        return tokensDetectados;
     }
 }

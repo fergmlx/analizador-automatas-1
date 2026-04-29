@@ -5,6 +5,8 @@
 package com.emulador;
 
 import java.awt.event.KeyEvent;
+import java.util.List;
+import javax.swing.table.DefaultTableModel;
 
 /**
  *
@@ -33,6 +35,8 @@ public class Principal extends javax.swing.JFrame {
         jScrollPane2 = new javax.swing.JScrollPane();
         txtSalida = new javax.swing.JTextArea();
         btnAnalizar = new javax.swing.JButton();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        tblTokens = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -59,6 +63,22 @@ public class Principal extends javax.swing.JFrame {
             }
         });
 
+        tblTokens.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Token", "Lexema", "Patrón", "Palabra reservada"
+            }
+        ));
+        jScrollPane3.setViewportView(tblTokens);
+        if (tblTokens.getColumnModel().getColumnCount() > 0) {
+            tblTokens.getColumnModel().getColumn(2).setPreferredWidth(150);
+        }
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -66,22 +86,26 @@ public class Principal extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(22, 22, 22)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(btnAnalizar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 344, Short.MAX_VALUE))
-                .addGap(46, 46, 46)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 620, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(89, Short.MAX_VALUE))
+                    .addComponent(btnAnalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jScrollPane3))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 1034, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(65, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(20, 20, 20)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 552, Short.MAX_VALUE)
-                    .addComponent(jScrollPane2))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                    .addComponent(jScrollPane3)
+                    .addComponent(jScrollPane1))
+                .addGap(27, 27, 27)
                 .addComponent(btnAnalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(60, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 22, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 193, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(43, 43, 43))
         );
 
         pack();
@@ -103,24 +127,29 @@ public class Principal extends javax.swing.JFrame {
 
     private void analizar() {
         txtSalida.setText("");
+    
+        DefaultTableModel modeloTabla = (DefaultTableModel) tblTokens.getModel();
+        modeloTabla.setRowCount(0);
 
         String codigoFuente = txtEntrada.getText();
         String[] lineas = codigoFuente.split("\\r?\\n");
-
         Analizador analizador = new Analizador();
 
         for (int i = 0; i < lineas.length; i++) {
             String lineaActual = lineas[i].trim();
-
-            if (lineaActual.isEmpty()) {
-                continue;
-            }
+            if (lineaActual.isEmpty()) continue;
 
             try {
                 txtSalida.append("Analizando: " + lineaActual + "\n");
 
-                String resultado = analizador.procesarLineaFrame(lineaActual);
+                // llenar tabla
+                List<FilaToken> tokens = analizador.obtenerTokensLexicos(lineaActual);
+                for (FilaToken ft : tokens) {
+                    modeloTabla.addRow(new Object[]{ ft.token, ft.lexema, ft.patron, ft.reservada });
+                }
 
+                // analisis
+                String resultado = analizador.procesarLineaFrame(lineaActual);
                 if (!resultado.isEmpty()) {
                     txtSalida.append(resultado + "\n");
                 }
@@ -128,7 +157,6 @@ public class Principal extends javax.swing.JFrame {
             } catch (Exception e) {
                 txtSalida.append("Línea " + (i + 1) + " -> " + e.getMessage() + "\n");
             }
-
             txtSalida.append("--------------------------------------------------\n");
         }
     }
@@ -172,6 +200,8 @@ public class Principal extends javax.swing.JFrame {
     private javax.swing.JButton btnAnalizar;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JTable tblTokens;
     private javax.swing.JTextArea txtEntrada;
     private javax.swing.JTextArea txtSalida;
     // End of variables declaration//GEN-END:variables

@@ -6,6 +6,7 @@ com\emulador\TiposIncompatiblesException.class
 com\analizador\App.class
 com\emulador\Principal$1.class
 com\emulador\Principal.class
+com\emulador\FilaToken.class
 com\emulador\Main$1.class
 com\analizador\sym.class
 com\emulador\Principal$2.class
