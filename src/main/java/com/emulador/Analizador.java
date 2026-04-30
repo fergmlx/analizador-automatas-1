@@ -209,9 +209,10 @@ public class Analizador {
     public List<FilaToken> obtenerTokensLexicos(String linea) {
         List<FilaToken> tokensDetectados = new ArrayList<>();
         
-        linea = linea.replaceAll(REGEX_COMENTARIO, "").trim();
+        linea = linea.replaceAll("%.*", "").trim();
         if (linea.isEmpty()) return tokensDetectados;
 
+        // encontrar qué es
         String regex = "(\"[^\"]*\")|(\\bcomp\\b|\\bmed\\b|\\bPal\\b)|([a-zA-Z][a-zA-Z0-9]*)|(\\d+\\.\\d+)|(\\d+)|([\\$\\+\\-\\*\\/])";
         Matcher matcher = Pattern.compile(regex).matcher(linea);
 
@@ -219,17 +220,17 @@ public class Analizador {
             String lexema = matcher.group();
             
             if (matcher.group(1) != null) {
-                tokensDetectados.add(new FilaToken("Cadena", lexema, "Texto entre comillas", "no"));
+                tokensDetectados.add(new FilaToken("Cadena", lexema, "\"[^\"]*\"", "no"));
             } else if (matcher.group(2) != null) {
-                tokensDetectados.add(new FilaToken("Tipo de dato", lexema, "Letras seguidas de letras", "sí"));
+                tokensDetectados.add(new FilaToken("Tipo de dato", lexema, "\\b(comp|med|Pal)\\b", "yes"));
             } else if (matcher.group(3) != null) {
-                tokensDetectados.add(new FilaToken("Identificador", lexema, "Letra seguida de letra o digito", "no"));
+                tokensDetectados.add(new FilaToken("Identificador", lexema, "[a-zA-Z][a-zA-Z0-9]*", "no"));
             } else if (matcher.group(4) != null) {
-                tokensDetectados.add(new FilaToken("Decimal (med)", lexema, "Digitos con punto decimal", "no"));
+                tokensDetectados.add(new FilaToken("Decimal", lexema, "\\d+\\.\\d+", "no"));
             } else if (matcher.group(5) != null) {
-                tokensDetectados.add(new FilaToken("Entero (comp)", lexema, "Digito seguido de más digitos", "no"));
+                tokensDetectados.add(new FilaToken("Entero", lexema, "\\d+", "no"));
             } else if (matcher.group(6) != null) {
-                tokensDetectados.add(new FilaToken(lexema, lexema, "Signo " + lexema, "sí"));
+                tokensDetectados.add(new FilaToken(lexema, lexema, "[\\$\\+\\-\\*\\/]", "yes")); 
             }
         }
         

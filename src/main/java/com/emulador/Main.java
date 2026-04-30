@@ -8,7 +8,6 @@ import javax.swing.UIManager;
 
 public class Main {
     public static void main(String[] args) {
-        //Analizador analizador = new Analizador();
         try {
             FlatMacLightLaf.setup();
             UIManager.put("Button.arc", 999);

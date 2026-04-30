@@ -127,9 +127,9 @@ public class Principal extends javax.swing.JFrame {
 
     private void analizar() {
         txtSalida.setText("");
-    
+
         DefaultTableModel modeloTabla = (DefaultTableModel) tblTokens.getModel();
-        modeloTabla.setRowCount(0);
+        modeloTabla.setRowCount(0); 
 
         String codigoFuente = txtEntrada.getText();
         String[] lineas = codigoFuente.split("\\r?\\n");
@@ -137,27 +137,32 @@ public class Principal extends javax.swing.JFrame {
 
         for (int i = 0; i < lineas.length; i++) {
             String lineaActual = lineas[i].trim();
-            if (lineaActual.isEmpty()) continue;
+            if (lineaActual.isEmpty() || lineaActual.startsWith("%")) continue;
+
+            txtSalida.append("Analizando: " + lineaActual + "\n");
+
+            System.out.println(">>> Analizando línea: " + lineaActual);
 
             try {
-                txtSalida.append("Analizando: " + lineaActual + "\n");
-
-                // llenar tabla
                 List<FilaToken> tokens = analizador.obtenerTokensLexicos(lineaActual);
                 for (FilaToken ft : tokens) {
                     modeloTabla.addRow(new Object[]{ ft.token, ft.lexema, ft.patron, ft.reservada });
+                    System.out.printf("%-15s %s\n", ft.lexema, ft.token);
                 }
 
-                // analisis
                 String resultado = analizador.procesarLineaFrame(lineaActual);
                 if (!resultado.isEmpty()) {
                     txtSalida.append(resultado + "\n");
+                    System.out.println(resultado); 
                 }
 
             } catch (Exception e) {
                 txtSalida.append("Línea " + (i + 1) + " -> " + e.getMessage() + "\n");
+                System.err.println("EXCEPCIÓN Línea " + (i + 1) + " -> " + e.getMessage());
             }
+            
             txtSalida.append("--------------------------------------------------\n");
+            System.out.println("==================================================\n");
         }
     }
     

@@ -10,6 +10,6 @@ package com.emulador;
  */
 public class FaltaOperandoException extends Exception {
     public FaltaOperandoException(String linea) {
-        super("ERROR SINTÁCTICO: Falta un operando en la expresión -> '" + linea + "'");
+        super("ERROR: Falta un operando en la expresión -> '" + linea + "'");
     }
 }

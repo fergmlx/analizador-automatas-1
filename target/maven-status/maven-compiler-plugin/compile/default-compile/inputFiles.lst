@@ -1,8 +1,8 @@
 C:\Users\Fer\Documents\NetBeansProjects\Analizador\src\main\java\com\analizador\App.java
 C:\Users\Fer\Documents\NetBeansProjects\Analizador\src\main\java\com\emulador\Analizador.java
 C:\Users\Fer\Documents\NetBeansProjects\Analizador\src\main\java\com\emulador\Comp.java
+C:\Users\Fer\Documents\NetBeansProjects\Analizador\src\main\java\com\emulador\ErrorException.java
 C:\Users\Fer\Documents\NetBeansProjects\Analizador\src\main\java\com\emulador\ErrorSemanticoException.java
-C:\Users\Fer\Documents\NetBeansProjects\Analizador\src\main\java\com\emulador\ErrorSintacticoException.java
 C:\Users\Fer\Documents\NetBeansProjects\Analizador\src\main\java\com\emulador\FaltaOperandoException.java
 C:\Users\Fer\Documents\NetBeansProjects\Analizador\src\main\java\com\emulador\FilaToken.java
 C:\Users\Fer\Documents\NetBeansProjects\Analizador\src\main\java\com\emulador\FormatoInvalidoException.java

@@ -5,7 +5,7 @@ public class Pal {
 
     public Pal(String valorStr) throws FormatoInvalidoException {
         if (!valorStr.startsWith("\"") || !valorStr.endsWith("\"")) {
-            throw new FormatoInvalidoException("Pal", valorStr);
+            throw new FormatoInvalidoException("pal", valorStr);
         }
         this.valor = valorStr.replace("\"", "");
     }

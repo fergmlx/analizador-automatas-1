@@ -12,7 +12,7 @@ com\analizador\sym.class
 com\emulador\Principal$2.class
 com\emulador\Analizador.class
 com\emulador\Comp.class
-com\emulador\ErrorSintacticoException.class
+com\emulador\ErrorException.class
 com\analizador\Parser.class
 com\emulador\ErrorSemanticoException.class
 com\emulador\Main.class
