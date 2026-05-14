@@ -1,8 +1,7 @@
 com\analizador\Lexer.class
-com\emulador\FaltaOperandoException.class
-com\emulador\VariableNoDeclaradaException.class
+com\emulador\ExcepcionSemantica.class
+com\emulador\ExcepcionSintactica.class
 com\emulador\Principal$3.class
-com\emulador\TiposIncompatiblesException.class
 com\analizador\App.class
 com\emulador\Principal$1.class
 com\emulador\Principal.class
@@ -12,11 +11,8 @@ com\analizador\sym.class
 com\emulador\Principal$2.class
 com\emulador\Analizador.class
 com\emulador\Comp.class
-com\emulador\ErrorException.class
 com\analizador\Parser.class
-com\emulador\ErrorSemanticoException.class
 com\emulador\Main.class
 com\emulador\Pal.class
-com\emulador\FormatoInvalidoException.class
 com\analizador\Parser$CUP$Parser$actions.class
 com\emulador\Med.class
