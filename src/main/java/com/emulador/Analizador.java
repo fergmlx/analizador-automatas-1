@@ -53,7 +53,7 @@ public class Analizador {
             Object varGuardada = tablaSimbolos.get(nombreVar);
             if (varGuardada instanceof Comp) tipo = "comp";
             else if (varGuardada instanceof Med) tipo = "med";
-            else if (varGuardada instanceof Pal) tipo = "Pal";
+            else if (varGuardada instanceof Pal) tipo = "pal";
         } else {
             throw new Exception("ERROR SINTÁCTICO: Declaración mal formada en '" + ladoIzquierdo + "'");
         }
@@ -109,7 +109,7 @@ public class Analizador {
             Object varGuardada = tablaSimbolos.get(nombreVar);
             if (varGuardada instanceof Comp) tipo = "comp";
             else if (varGuardada instanceof Med) tipo = "med";
-            else if (varGuardada instanceof Pal) tipo = "Pal";
+            else if (varGuardada instanceof Pal) tipo = "pal";
         } else {
             throw new Exception("ERROR SINTÁCTICO: Declaración mal formada en '" + ladoIzquierdo + "'");
         }
@@ -156,7 +156,7 @@ public class Analizador {
             if (!tipoEsperado.isEmpty()) {
                 if (tipoEsperado.equals("comp") && !(var instanceof Comp)) throw new TiposIncompatiblesException("'" + token + "' no es 'comp'.");
                 if (tipoEsperado.equals("med") && !(var instanceof Med)) throw new TiposIncompatiblesException("'" + token + "' no es 'med'.");
-                if (tipoEsperado.equals("Pal") && !(var instanceof Pal)) throw new TiposIncompatiblesException("'" + token + "' no es 'Pal'.");
+                if (tipoEsperado.equals("pal") && !(var instanceof Pal)) throw new TiposIncompatiblesException("'" + token + "' no es 'Pal'.");
             }
             return var;
         }
@@ -170,7 +170,7 @@ public class Analizador {
         switch (tipoEsperado) {
             case "comp": return new Comp(token);
             case "med": return new Med(token);
-            case "Pal": return new Pal(token);
+            case "pal": return new Pal(token);
             default: throw new TiposIncompatiblesException("Tipo desconocido.");
         }
     }
