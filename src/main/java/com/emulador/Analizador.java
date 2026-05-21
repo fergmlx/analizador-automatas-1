@@ -13,15 +13,15 @@ public class Analizador {
     private static final String REGEX_COMENTARIO = "%.*";
     private static final String SIMBOLO_ASIGNACION = "$";
     
-    public void procesarLinea(String linea) throws Exception {
+    public void procesarLineaFrame(String linea) throws Exception {
         linea = linea.replaceAll(REGEX_COMENTARIO, "").trim();
         if (linea.isEmpty()) return;
-        
+
         if (linea.endsWith("+") || linea.startsWith("+") ||
             linea.endsWith("-") || linea.startsWith("-") ||
             linea.endsWith("*") || linea.startsWith("*") ||
             linea.endsWith("/") || linea.startsWith("/")) {
-            throw new FaltaOperandoException(linea);
+            throw new ExcepcionSintactica("Falta un operando en la expresión -> '" + linea + "'");
         }
 
         if (!linea.contains(SIMBOLO_ASIGNACION)) {
@@ -34,7 +34,7 @@ public class Analizador {
         String expresion = partes.length > 1 ? partes[1].trim() : "";
         
         if (expresion.isEmpty()) {
-            throw new Exception("ERROR SINTÁCTICO: Falta valor después de la asignación '$'.");
+            throw new ExcepcionSintactica("Falta valor después de la asignación '$'.");
         }
         
         String tipo = "";
@@ -44,10 +44,21 @@ public class Analizador {
         if (dec.length == 2) {
             tipo = dec[0];
             nombreVar = dec[1];
+            
+            // CORRECCIÓN: Evitar redeclaración de variables
+            if (tablaSimbolos.containsKey(nombreVar)) {
+                throw new ExcepcionSemantica("La variable '" + nombreVar + "' ya fue declarada previamente.");
+            }
+            
+            // CORRECCIÓN: Excepción para tipos desconocidos
+            if (!tipo.equals("comp") && !tipo.equals("med") && !tipo.equals("pal")) {
+                throw new ExcepcionSemantica("Tipo de dato desconocido: '" + tipo + "'");
+            }
+            
         } else if (dec.length == 1) {
             nombreVar = dec[0];
             if (!tablaSimbolos.containsKey(nombreVar)) {
-                throw new VariableNoDeclaradaException(nombreVar);
+                throw new ExcepcionSemantica("La variable '" + nombreVar + "' no ha sido declarada.");
             }
             
             Object varGuardada = tablaSimbolos.get(nombreVar);
@@ -55,74 +66,11 @@ public class Analizador {
             else if (varGuardada instanceof Med) tipo = "med";
             else if (varGuardada instanceof Pal) tipo = "pal";
         } else {
-            throw new Exception("ERROR SINTÁCTICO: Declaración mal formada en '" + ladoIzquierdo + "'");
+            throw new ExcepcionSintactica("Declaración mal formada en '" + ladoIzquierdo + "'");
         }
         
         Object valorFinal = evaluarExpresion(expresion, tipo);
         tablaSimbolos.put(nombreVar, valorFinal);
-        
-        String valorStr = "";
-        if (valorFinal instanceof Comp) valorStr = String.valueOf(((Comp)valorFinal).getValor());
-        if (valorFinal instanceof Med) valorStr = String.valueOf(((Med)valorFinal).getValor());
-        if (valorFinal instanceof Pal) valorStr = "\"" + ((Pal)valorFinal).getValor() + "\"";
-        
-        System.out.println("-> OK: " + nombreVar + " $ " + valorStr + " [" + tipo + "]");
-    }
-    
-    public String procesarLineaFrame(String linea) throws Exception {
-        linea = linea.replaceAll(REGEX_COMENTARIO, "").trim();
-        if (linea.isEmpty()) return "";
-
-        if (linea.endsWith("+") || linea.startsWith("+") ||
-            linea.endsWith("-") || linea.startsWith("-") ||
-            linea.endsWith("*") || linea.startsWith("*") ||
-            linea.endsWith("/") || linea.startsWith("/")) {
-            throw new FaltaOperandoException(linea);
-        }
-
-        if (!linea.contains(SIMBOLO_ASIGNACION)) {
-            evaluarExpresion(linea, ""); 
-            return "";
-        }
-
-        String[] partes = linea.split("\\" + SIMBOLO_ASIGNACION);
-        String ladoIzquierdo = partes[0].trim();
-        String expresion = partes.length > 1 ? partes[1].trim() : "";
-        
-        if (expresion.isEmpty()) {
-            throw new Exception("ERROR SINTÁCTICO: Falta valor después de la asignación '$'.");
-        }
-        
-        String tipo = "";
-        String nombreVar = "";
-        
-        String[] dec = ladoIzquierdo.split(" ");
-        if (dec.length == 2) {
-            tipo = dec[0];
-            nombreVar = dec[1];
-        } else if (dec.length == 1) {
-            nombreVar = dec[0];
-            if (!tablaSimbolos.containsKey(nombreVar)) {
-                throw new VariableNoDeclaradaException(nombreVar);
-            }
-            
-            Object varGuardada = tablaSimbolos.get(nombreVar);
-            if (varGuardada instanceof Comp) tipo = "comp";
-            else if (varGuardada instanceof Med) tipo = "med";
-            else if (varGuardada instanceof Pal) tipo = "pal";
-        } else {
-            throw new Exception("ERROR SINTÁCTICO: Declaración mal formada en '" + ladoIzquierdo + "'");
-        }
-        
-        Object valorFinal = evaluarExpresion(expresion, tipo);
-        tablaSimbolos.put(nombreVar, valorFinal);
-        
-        String valorStr = "";
-        if (valorFinal instanceof Comp) valorStr = String.valueOf(((Comp)valorFinal).getValor());
-        if (valorFinal instanceof Med) valorStr = String.valueOf(((Med)valorFinal).getValor());
-        if (valorFinal instanceof Pal) valorStr = "\"" + ((Pal)valorFinal).getValor() + "\"";
-
-        return "-> OK: " + nombreVar + " $ " + valorStr + " [" + tipo + "]";
     }
     
     private Object evaluarExpresion(String expresion, String tipoEsperado) throws Exception {
@@ -137,7 +85,7 @@ public class Analizador {
         if (!operador.isEmpty()) {
             String[] operandos = expresion.split(regexSplit);
             if (operandos.length != 2) {
-                throw new FaltaOperandoException(expresion);
+                throw new ExcepcionSintactica("Falta un operando en la expresión: '" + expresion + "'");
             }
             
             Object op1 = obtenerValorOLiteral(operandos[0].trim(), tipoEsperado);
@@ -152,31 +100,27 @@ public class Analizador {
     private Object obtenerValorOLiteral(String token, String tipoEsperado) throws Exception {
         if (tablaSimbolos.containsKey(token)) {
             Object var = tablaSimbolos.get(token);
-            // Si validamos asignación, verificamos que el tipo coincida
             if (!tipoEsperado.isEmpty()) {
-                if (tipoEsperado.equals("comp") && !(var instanceof Comp)) throw new TiposIncompatiblesException("'" + token + "' no es 'comp'.");
-                if (tipoEsperado.equals("med") && !(var instanceof Med)) throw new TiposIncompatiblesException("'" + token + "' no es 'med'.");
-                if (tipoEsperado.equals("pal") && !(var instanceof Pal)) throw new TiposIncompatiblesException("'" + token + "' no es 'Pal'.");
+                if (tipoEsperado.equals("comp") && !(var instanceof Comp)) throw new ExcepcionSemantica("'" + token + "' no es tipo 'comp'.");
+                if (tipoEsperado.equals("med") && !(var instanceof Med)) throw new ExcepcionSemantica("'" + token + "' no es tipo 'med'.");
+                if (tipoEsperado.equals("pal") && !(var instanceof Pal)) throw new ExcepcionSemantica("'" + token + "' no es tipo 'pal'.");
             }
             return var;
         }
         
-        // Si no está en la tabla de símbolos y no hay tipo esperado, es una variable que no existe
         if (tipoEsperado.isEmpty()) {
-            throw new VariableNoDeclaradaException(token);
+            throw new ExcepcionSemantica("La variable '" + token + "' no ha sido declarada.");
         }
         
-        // Parsear directo al tipo
         switch (tipoEsperado) {
             case "comp": return new Comp(token);
             case "med": return new Med(token);
             case "pal": return new Pal(token);
-            default: throw new TiposIncompatiblesException("Tipo desconocido.");
+            default: throw new ExcepcionSemantica("Tipo de dato desconocido: " + tipoEsperado);
         }
     }
 
     private Object ejecutarOperacion(Object op1, Object op2, String operador, String tipoEsperado) throws Exception {
-        // ejecuta la operación utilizando el método de cada clase
         if (op1 instanceof Comp && op2 instanceof Comp) {
             Comp c1 = (Comp) op1; Comp c2 = (Comp) op2;
             switch(operador) {
@@ -203,17 +147,15 @@ public class Analizador {
             }
         }
         
-        throw new TiposIncompatiblesException("No se pueden operar tipos diferentes.");
+        throw new ExcepcionSemantica("No se pueden operar variables de tipos diferentes.");
     }
     
-    public List<FilaToken> obtenerTokensLexicos(String linea) {
+        public List<FilaToken> obtenerTokensLexicos(String linea) {
         List<FilaToken> tokensDetectados = new ArrayList<>();
-        
         linea = linea.replaceAll("%.*", "").trim();
         if (linea.isEmpty()) return tokensDetectados;
 
-        // encontrar qué es
-        String regex = "(\"[^\"]*\")|(\\bcomp\\b|\\bmed\\b|\\bPal\\b)|([a-zA-Z][a-zA-Z0-9]*)|(\\d+\\.\\d+)|(\\d+)|([\\$\\+\\-\\*\\/])";
+        String regex = "(\"[^\"]*\")|(\\bcomp\\b|\\bmed\\b|\\bpal\\b)|([a-zA-Z][a-zA-Z0-9]*)|(\\d+\\.\\d+)|(\\d+)|([\\$\\+\\-\\*\\/])";
         Matcher matcher = Pattern.compile(regex).matcher(linea);
 
         while (matcher.find()) {
@@ -222,18 +164,18 @@ public class Analizador {
             if (matcher.group(1) != null) {
                 tokensDetectados.add(new FilaToken("Cadena", lexema, "\"[^\"]*\"", "no"));
             } else if (matcher.group(2) != null) {
-                tokensDetectados.add(new FilaToken("Tipo de dato", lexema, "\\b(comp|med|Pal)\\b", "yes"));
+                tokensDetectados.add(new FilaToken("Tipo de dato", lexema, "comp | med | pal", "sí"));
             } else if (matcher.group(3) != null) {
                 tokensDetectados.add(new FilaToken("Identificador", lexema, "[a-zA-Z][a-zA-Z0-9]*", "no"));
             } else if (matcher.group(4) != null) {
-                tokensDetectados.add(new FilaToken("Decimal", lexema, "\\d+\\.\\d+", "no"));
+                tokensDetectados.add(new FilaToken("Decimal", lexema, "^\\d{1,10}(\\.\\d{1,8})?$", "no"));
             } else if (matcher.group(5) != null) {
-                tokensDetectados.add(new FilaToken("Entero", lexema, "\\d+", "no"));
+                tokensDetectados.add(new FilaToken("Entero", lexema, "^\\d{1,10}$", "no"));
             } else if (matcher.group(6) != null) {
-                tokensDetectados.add(new FilaToken(lexema, lexema, "[\\$\\+\\-\\*\\/]", "yes")); 
+                // Símbolos
+                tokensDetectados.add(new FilaToken("Signo", lexema, "[\\$\\+\\-\\*\\/]", "sí")); 
             }
         }
-        
         return tokensDetectados;
     }
 }
