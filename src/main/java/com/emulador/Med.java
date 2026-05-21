@@ -1,16 +1,67 @@
 package com.emulador;
 
-import java.util.regex.Pattern;
-
 public class Med {
     private double valor;
-    private static final String REGEX_MED = "^\\d{1,10}(\\.\\d{1,8})?$";
+
+    public static final int MAX_ENTEROS = 10;
+    public static final int MAX_DECIMALES = 8;
+    public static final String REGEX_MED = "^\\d{1,10}(\\.\\d{1,8})?$";
 
     public Med(String valorStr) throws ExcepcionSemantica {
-        if (!Pattern.matches(REGEX_MED, valorStr)) {
-            throw new ExcepcionSemantica("El valor '" + valorStr + "' no cumple con el formato 'med' (10.8).");
+        if (valorStr == null || valorStr.trim().isEmpty()) {
+            throw new ExcepcionSemantica("Literal med vacío.");
         }
-        this.valor = Double.parseDouble(valorStr);
+        valorStr = valorStr.trim();
+
+        // Validación estructural (solo dígitos y máximo un punto)
+        if (!valorStr.matches("^[0-9.]+$")) {
+            throw new ExcepcionSemantica(
+                "Literal med inválido: '" + valorStr + "'. Solo se permiten dígitos y '.'"
+            );
+        }
+
+        int puntos = 0;
+        for (int i = 0; i < valorStr.length(); i++) if (valorStr.charAt(i) == '.') puntos++;
+        if (puntos > 1) {
+            throw new ExcepcionSemantica(
+                "Literal med inválido: '" + valorStr + "'. Solo se permite un punto decimal."
+            );
+        }
+        if (valorStr.startsWith(".") || valorStr.endsWith(".")) {
+            throw new ExcepcionSemantica(
+                "Literal med inválido: '" + valorStr + "'. El punto decimal no puede ir al inicio o al final."
+            );
+        }
+
+        String[] partes = valorStr.split("\\.");
+        String parteEntera = partes[0];
+        String parteDecimal = (partes.length == 2) ? partes[1] : "";
+
+        if (parteEntera.length() < 1) {
+            throw new ExcepcionSemantica("Literal med inválido: falta parte entera en '" + valorStr + "'.");
+        }
+        if (parteEntera.length() > MAX_ENTEROS) {
+            throw new ExcepcionSemantica(
+                "Literal med fuera de rango: '" + valorStr + "'. Máximo " + MAX_ENTEROS + " dígitos en la parte entera."
+            );
+        }
+        if (!parteDecimal.isEmpty() && parteDecimal.length() > MAX_DECIMALES) {
+            throw new ExcepcionSemantica(
+                "Literal med fuera de rango: '" + valorStr + "'. Máximo " + MAX_DECIMALES + " dígitos decimales."
+            );
+        }
+
+        if (!valorStr.matches(REGEX_MED)) {
+            throw new ExcepcionSemantica(
+                "Literal med inválido: '" + valorStr + "'. Formato esperado: " + REGEX_MED.replace("\\\\", "\\")
+            );
+        }
+
+        try {
+            this.valor = Double.parseDouble(valorStr);
+        } catch (NumberFormatException ex) {
+            throw new ExcepcionSemantica("Literal med inválido: no se pudo convertir '" + valorStr + "' a número.");
+        }
     }
 
     public Med(double valor) {
@@ -20,11 +71,9 @@ public class Med {
     public double getValor() { return valor; }
 
     public Med sumar(Med otro) { return new Med(this.valor + otro.getValor()); }
-    
     public Med restar(Med otro) { return new Med(this.valor - otro.getValor()); }
-    
     public Med multiplicar(Med otro) { return new Med(this.valor * otro.getValor()); }
-    
+
     public Med dividir(Med otro) throws ExcepcionSemantica {
         if (otro.getValor() == 0.0) throw new ExcepcionSemantica("División por cero en 'med'.");
         return new Med(this.valor / otro.getValor());

@@ -1,16 +1,35 @@
 package com.emulador;
 
-import java.util.regex.Pattern;
-
 public class Comp {
     private int valor;
-    private static final String REGEX_COMP = "^\\d{1,10}$";
+
+    public static final int MAX_DIGITOS = 10;
+    public static final String REGEX_COMP = "^\\d{1,10}$";
 
     public Comp(String valorStr) throws ExcepcionSemantica {
-        if (!Pattern.matches(REGEX_COMP, valorStr)) {
-            throw new ExcepcionSemantica("El valor '" + valorStr + "' no cumple con el formato o límite de 'comp'.");
+        if (valorStr == null || valorStr.trim().isEmpty()) {
+            throw new ExcepcionSemantica("Literal comp vacío.");
         }
-        this.valor = Integer.parseInt(valorStr);
+        valorStr = valorStr.trim();
+
+        if (!valorStr.matches("^\\d+$")) {
+            throw new ExcepcionSemantica(
+                "Literal comp inválido: '" + valorStr + "'. Solo se permiten dígitos (0-9)."
+            );
+        }
+        if (valorStr.length() > MAX_DIGITOS) {
+            throw new ExcepcionSemantica(
+                "Literal comp fuera de rango: '" + valorStr + "'. Máximo " + MAX_DIGITOS + " dígitos."
+            );
+        }
+
+        try {
+            this.valor = Integer.parseInt(valorStr);
+        } catch (NumberFormatException ex) {
+            throw new ExcepcionSemantica(
+                "Literal comp no cabe en int: '" + valorStr + "'."
+            );
+        }
     }
 
     public Comp(int valor) {
@@ -20,11 +39,9 @@ public class Comp {
     public int getValor() { return valor; }
 
     public Comp sumar(Comp otro) { return new Comp(this.valor + otro.getValor()); }
-    
     public Comp restar(Comp otro) { return new Comp(this.valor - otro.getValor()); }
-    
     public Comp multiplicar(Comp otro) { return new Comp(this.valor * otro.getValor()); }
-    
+
     public Comp dividir(Comp otro) throws ExcepcionSemantica {
         if (otro.getValor() == 0) throw new ExcepcionSemantica("División por cero en 'comp'.");
         return new Comp(this.valor / otro.getValor());
