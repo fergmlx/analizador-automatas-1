@@ -37,6 +37,8 @@ public class Principal extends javax.swing.JFrame {
         btnAnalizar = new javax.swing.JButton();
         jScrollPane3 = new javax.swing.JScrollPane();
         tblTokens = new javax.swing.JTable();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        txtGramatica = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -79,6 +81,10 @@ public class Principal extends javax.swing.JFrame {
             tblTokens.getColumnModel().getColumn(2).setPreferredWidth(150);
         }
 
+        txtGramatica.setColumns(20);
+        txtGramatica.setRows(5);
+        jScrollPane4.setViewportView(txtGramatica);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -86,24 +92,32 @@ public class Principal extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(22, 22, 22)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(btnAnalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 1034, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnAnalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
-                        .addComponent(jScrollPane3))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 1034, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane3)
+                            .addComponent(jScrollPane4))))
                 .addContainerGap(65, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(20, 20, 20)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jScrollPane3)
-                    .addComponent(jScrollPane1))
-                .addGap(27, 27, 27)
-                .addComponent(btnAnalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 22, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 431, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(27, 27, 27)
+                        .addComponent(btnAnalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 44, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 4, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 269, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane4)))
+                .addGap(18, 18, 18)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 193, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(43, 43, 43))
         );
@@ -125,38 +139,88 @@ public class Principal extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_txtEntradaKeyReleased
 
-        private void analizar() {
-        txtSalida.setText("");
+    private void analizar() {
+    txtSalida.setText("");
+    txtGramatica.setText("");
 
-        DefaultTableModel modeloTabla = (DefaultTableModel) tblTokens.getModel();
-        modeloTabla.setRowCount(0); 
+    DefaultTableModel modeloTabla = (DefaultTableModel) tblTokens.getModel();
+    modeloTabla.setRowCount(0);
 
-        String codigoFuente = txtEntrada.getText();
-        String[] lineas = codigoFuente.split("\\r?\\n");
-        Analizador analizador = new Analizador();
+    String codigoFuente = txtEntrada.getText();
+    String[] lineas = codigoFuente.split("\\r?\\n");
+    Analizador analizador = new Analizador();
 
-        for (int i = 0; i < lineas.length; i++) {
-            String lineaActual = lineas[i].trim();
-            
-            if (lineaActual.isEmpty() || lineaActual.startsWith("%")) continue;
+    boolean enIf = false;
+    boolean ejecutarBloque = false;
+    int nivelLlaves = 0;
 
-            try {
-                List<FilaToken> tokens = analizador.obtenerTokensLexicos(lineaActual);
-                for (FilaToken ft : tokens) {
-                    modeloTabla.addRow(new Object[]{ ft.token, ft.lexema, ft.patron, ft.reservada });
-                    
-                    txtSalida.append(String.format("%-15s %s\n", ft.lexema, ft.token));
+    for (int i = 0; i < lineas.length; i++) {
+        String linea = lineas[i].trim();
+        if (linea.isEmpty() || linea.startsWith("%")) continue;
+
+        try {
+            if (!enIf && linea.startsWith("if")) {
+                analizador.procesarLineaFrame(linea);
+
+                // gramática del if
+                txtGramatica.append("<bloque> : <paréntesis> : <expresión>\n");
+                txtGramatica.append("<paréntesis> : <corchete> : <expresión>\n");
+
+                // evaluar boolean literal
+                String sinEspacios = linea.replaceAll("\\s+", "");
+                int p1 = sinEspacios.indexOf('(');
+                int p2 = sinEspacios.indexOf(')', p1 + 1);
+                String cond = sinEspacios.substring(p1 + 1, p2);
+
+                ejecutarBloque = cond.equals("true");
+                enIf = true;
+                nivelLlaves = 1;
+
+                txtSalida.append("IF (" + cond + ")\n");
+                txtSalida.append("--------------------------------------------------\n");
+                continue;
+            }
+
+            if (enIf) {
+                if (linea.contains("{")) nivelLlaves++;
+                if (linea.contains("}")) nivelLlaves--;
+
+                if (nivelLlaves <= 0) {
+                    enIf = false;
+                    ejecutarBloque = false;
+                    nivelLlaves = 0;
+
+                    txtGramatica.append("<identificador> : <break>\n");
+
+                    txtSalida.append("FIN IF\n");
+                    txtSalida.append("--------------------------------------------------\n");
+                    continue;
                 }
 
-                analizador.procesarLineaFrame(lineaActual);
-
-            } catch (Exception e) {
-                txtSalida.append("\n---> " + e.getMessage() + "\n");
+                if (!ejecutarBloque) {
+                    continue;
+                }
             }
-            
+
+            txtGramatica.append("<identificador> : <tipo de dato> : <asignación>\n");
+
+            List<FilaToken> tokens = analizador.obtenerTokensLexicos(linea);
+            for (FilaToken ft : tokens) {
+                modeloTabla.addRow(new Object[]{ ft.token, ft.lexema, ft.patron, ft.reservada });
+                txtSalida.append(String.format("%-15s %s\n", ft.lexema, ft.token));
+            }
+
+            analizador.procesarLineaFrame(linea);
+
+            txtSalida.append("--------------------------------------------------\n");
+
+        } catch (Exception e) {
+            txtSalida.append("---> " + e.getMessage() + "\n");
             txtSalida.append("--------------------------------------------------\n");
         }
     }
+}
+
     
     /**
      * @param args the command line arguments
@@ -198,8 +262,10 @@ public class Principal extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JTable tblTokens;
     private javax.swing.JTextArea txtEntrada;
+    private javax.swing.JTextArea txtGramatica;
     private javax.swing.JTextArea txtSalida;
     // End of variables declaration//GEN-END:variables
 }
