@@ -328,7 +328,7 @@ public class Analizador {
             claseLiteral = "<expresion>";
         }
 
-        return "(<expresion> : <id> : <tipo de dato> : <asignacion> : <expresion> : "
+        return "(<expresion> : <identificador> : <tipo de dato> : <asignacion> : <expresion> : "
                 + claseLiteral + " : " + literalMostrar + " : <break>)";
     }
 
