@@ -4,7 +4,8 @@ public class Comp {
     private int valor;
 
     public static final int MAX_DIGITOS = 10;
-    public static final String REGEX_COMP = "^\\d{1,10}$";
+
+    public static final String PATRON_MOSTRAR = "\\d{1,10}";
 
     public Comp(String valorStr) throws ExcepcionSemantica {
         if (valorStr == null || valorStr.trim().isEmpty()) {
@@ -12,23 +13,17 @@ public class Comp {
         }
         valorStr = valorStr.trim();
 
-        if (!valorStr.matches("^\\d+$")) {
-            throw new ExcepcionSemantica(
-                "Literal comp inválido: '" + valorStr + "'. Solo se permiten dígitos (0-9)."
-            );
+        if (!valorStr.matches("\\d+")) {
+            throw new ExcepcionSemantica("Literal comp inválido: '" + valorStr + "'. Solo se permiten dígitos (0-9).");
         }
         if (valorStr.length() > MAX_DIGITOS) {
-            throw new ExcepcionSemantica(
-                "Literal comp fuera de rango: '" + valorStr + "'. Máximo " + MAX_DIGITOS + " dígitos."
-            );
+            throw new ExcepcionSemantica("Literal comp fuera de rango: '" + valorStr + "'. Máximo " + MAX_DIGITOS + " dígitos.");
         }
 
         try {
             this.valor = Integer.parseInt(valorStr);
         } catch (NumberFormatException ex) {
-            throw new ExcepcionSemantica(
-                "Literal comp no cabe en int: '" + valorStr + "'."
-            );
+            throw new ExcepcionSemantica("Literal comp no cabe en int: '" + valorStr + "'.");
         }
     }
 

@@ -5,7 +5,8 @@ public class Med {
 
     public static final int MAX_ENTEROS = 10;
     public static final int MAX_DECIMALES = 8;
-    public static final String REGEX_MED = "^\\d{1,10}(\\.\\d{1,8})?$";
+
+    public static final String PATRON_MOSTRAR = "\\d{1,10}(\\.\\d{1,8})?";
 
     public Med(String valorStr) throws ExcepcionSemantica {
         if (valorStr == null || valorStr.trim().isEmpty()) {
@@ -13,24 +14,17 @@ public class Med {
         }
         valorStr = valorStr.trim();
 
-        // Validación estructural (solo dígitos y máximo un punto)
-        if (!valorStr.matches("^[0-9.]+$")) {
-            throw new ExcepcionSemantica(
-                "Literal med inválido: '" + valorStr + "'. Solo se permiten dígitos y '.'"
-            );
+        if (!valorStr.matches("[0-9.]+")) {
+            throw new ExcepcionSemantica("Literal med inválido: '" + valorStr + "'. Solo se permiten dígitos y '.'.");
         }
 
         int puntos = 0;
         for (int i = 0; i < valorStr.length(); i++) if (valorStr.charAt(i) == '.') puntos++;
         if (puntos > 1) {
-            throw new ExcepcionSemantica(
-                "Literal med inválido: '" + valorStr + "'. Solo se permite un punto decimal."
-            );
+            throw new ExcepcionSemantica("Literal med inválido: '" + valorStr + "'. Solo se permite un punto decimal.");
         }
         if (valorStr.startsWith(".") || valorStr.endsWith(".")) {
-            throw new ExcepcionSemantica(
-                "Literal med inválido: '" + valorStr + "'. El punto decimal no puede ir al inicio o al final."
-            );
+            throw new ExcepcionSemantica("Literal med inválido: '" + valorStr + "'. El punto no puede ir al inicio o al final.");
         }
 
         String[] partes = valorStr.split("\\.");
@@ -41,20 +35,15 @@ public class Med {
             throw new ExcepcionSemantica("Literal med inválido: falta parte entera en '" + valorStr + "'.");
         }
         if (parteEntera.length() > MAX_ENTEROS) {
-            throw new ExcepcionSemantica(
-                "Literal med fuera de rango: '" + valorStr + "'. Máximo " + MAX_ENTEROS + " dígitos en la parte entera."
-            );
+            throw new ExcepcionSemantica("Literal med fuera de rango: '" + valorStr + "'. Máximo " + MAX_ENTEROS + " dígitos enteros.");
         }
         if (!parteDecimal.isEmpty() && parteDecimal.length() > MAX_DECIMALES) {
-            throw new ExcepcionSemantica(
-                "Literal med fuera de rango: '" + valorStr + "'. Máximo " + MAX_DECIMALES + " dígitos decimales."
-            );
+            throw new ExcepcionSemantica("Literal med fuera de rango: '" + valorStr + "'. Máximo " + MAX_DECIMALES + " dígitos decimales.");
         }
 
-        if (!valorStr.matches(REGEX_MED)) {
-            throw new ExcepcionSemantica(
-                "Literal med inválido: '" + valorStr + "'. Formato esperado: " + REGEX_MED.replace("\\\\", "\\")
-            );
+        // Validación final contra la regla (sin anclas, validamos con matches() total usando anclas implícitas)
+        if (!valorStr.matches("\\d{1,10}(\\.\\d{1,8})?")) {
+            throw new ExcepcionSemantica("Literal med inválido: '" + valorStr + "'. Patrón: " + PATRON_MOSTRAR);
         }
 
         try {
