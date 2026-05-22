@@ -140,87 +140,85 @@ public class Principal extends javax.swing.JFrame {
     }//GEN-LAST:event_txtEntradaKeyReleased
 
     private void analizar() {
-    txtSalida.setText("");
-    txtGramatica.setText("");
+        txtSalida.setText("");
+        txtGramatica.setText("");
 
-    DefaultTableModel modeloTabla = (DefaultTableModel) tblTokens.getModel();
-    modeloTabla.setRowCount(0);
+        DefaultTableModel modeloTabla = (DefaultTableModel) tblTokens.getModel();
+        modeloTabla.setRowCount(0);
 
-    String codigoFuente = txtEntrada.getText();
-    String[] lineas = codigoFuente.split("\\r?\\n");
-    Analizador analizador = new Analizador();
+        String codigoFuente = txtEntrada.getText();
+        String[] lineas = codigoFuente.split("\\r?\\n");
+        Analizador analizador = new Analizador();
 
-    boolean enIf = false;
-    boolean ejecutarBloque = false;
-    int nivelLlaves = 0;
+        boolean enIf = false;
+        boolean ejecutarBloque = false;
+        int nivelLlaves = 0;
 
-    for (int i = 0; i < lineas.length; i++) {
-        String linea = lineas[i].trim();
-        if (linea.isEmpty() || linea.startsWith("%")) continue;
-
-        try {
-            if (!enIf && linea.startsWith("if")) {
-                analizador.procesarLineaFrame(linea);
-
-                // gramática del if
-                txtGramatica.append("<bloque> : <paréntesis> : <expresión>\n");
-                txtGramatica.append("<paréntesis> : <corchete> : <expresión>\n");
-
-                // evaluar boolean literal
-                String sinEspacios = linea.replaceAll("\\s+", "");
-                int p1 = sinEspacios.indexOf('(');
-                int p2 = sinEspacios.indexOf(')', p1 + 1);
-                String cond = sinEspacios.substring(p1 + 1, p2);
-
-                ejecutarBloque = cond.equals("true");
-                enIf = true;
-                nivelLlaves = 1;
-
-                txtSalida.append("IF (" + cond + ")\n");
-                txtSalida.append("--------------------------------------------------\n");
+        for (int i = 0; i < lineas.length; i++) {
+            String linea = lineas[i].trim();
+            if (linea.isEmpty() || linea.startsWith("%")) {
                 continue;
             }
 
-            if (enIf) {
-                if (linea.contains("{")) nivelLlaves++;
-                if (linea.contains("}")) nivelLlaves--;
+            try {
+                String g = analizador.gramaticaDeLinea(linea);
+                if (!g.isEmpty()) {
+                    txtGramatica.append(g + "\n");
+                }
 
-                if (nivelLlaves <= 0) {
-                    enIf = false;
-                    ejecutarBloque = false;
-                    nivelLlaves = 0;
+                if (!enIf && linea.startsWith("if")) {
+                    boolean condicion = analizador.evaluarCondicionIf(linea);
 
-                    txtGramatica.append("<identificador> : <break>\n");
+                    enIf = true;
+                    ejecutarBloque = condicion;
+                    nivelLlaves = 1;
 
-                    txtSalida.append("FIN IF\n");
+                    txtSalida.append("IF (" + (condicion ? "true" : "false") + ")\n");
                     txtSalida.append("--------------------------------------------------\n");
                     continue;
                 }
 
-                if (!ejecutarBloque) {
-                    continue;
+                if (enIf) {
+                    if (linea.contains("{")) {
+                        nivelLlaves++;
+                    }
+                    if (linea.contains("}")) {
+                        nivelLlaves--;
+                    }
+
+                    if (nivelLlaves <= 0) {
+                        enIf = false;
+                        ejecutarBloque = false;
+                        nivelLlaves = 0;
+
+                        txtGramatica.append("(<identificador> : <break>)\n");
+
+                        txtSalida.append("FIN IF\n");
+                        txtSalida.append("--------------------------------------------------\n");
+                        continue;
+                    }
+
+                    if (!ejecutarBloque) {
+                        continue; // si if false, no procesa tokens ni semántica
+                    }
                 }
+
+                List<FilaToken> tokens = analizador.obtenerTokensLexicos(linea);
+                for (FilaToken ft : tokens) {
+                    modeloTabla.addRow(new Object[]{ft.token, ft.lexema, ft.patron, ft.reservada});
+                    txtSalida.append(String.format("%-15s %s\n", ft.lexema, ft.token));
+                }
+
+                analizador.procesarLineaFrame(linea);
+
+                txtSalida.append("--------------------------------------------------\n");
+
+            } catch (Exception e) {
+                txtSalida.append("---> " + e.getMessage() + "\n");
+                txtSalida.append("--------------------------------------------------\n");
             }
-
-            txtGramatica.append("<identificador> : <tipo de dato> : <asignación>\n");
-
-            List<FilaToken> tokens = analizador.obtenerTokensLexicos(linea);
-            for (FilaToken ft : tokens) {
-                modeloTabla.addRow(new Object[]{ ft.token, ft.lexema, ft.patron, ft.reservada });
-                txtSalida.append(String.format("%-15s %s\n", ft.lexema, ft.token));
-            }
-
-            analizador.procesarLineaFrame(linea);
-
-            txtSalida.append("--------------------------------------------------\n");
-
-        } catch (Exception e) {
-            txtSalida.append("---> " + e.getMessage() + "\n");
-            txtSalida.append("--------------------------------------------------\n");
         }
     }
-}
-
     
     /**
      * @param args the command line arguments
