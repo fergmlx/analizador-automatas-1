@@ -92,16 +92,16 @@ public class Principal extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(22, 22, 22)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 1034, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jScrollPane2)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(btnAnalizar, javax.swing.GroupLayout.PREFERRED_SIZE, 344, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jScrollPane3)
-                            .addComponent(jScrollPane4))))
-                .addContainerGap(65, Short.MAX_VALUE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jScrollPane4)
+                            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 775, Short.MAX_VALUE))))
+                .addContainerGap(43, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -139,86 +139,144 @@ public class Principal extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_txtEntradaKeyReleased
 
-    private void analizar() {
-        txtSalida.setText("");
-        txtGramatica.setText("");
+private void analizar() {
+    txtSalida.setText("");
+    txtGramatica.setText("");
 
-        DefaultTableModel modeloTabla = (DefaultTableModel) tblTokens.getModel();
-        modeloTabla.setRowCount(0);
+    DefaultTableModel modeloTabla = (DefaultTableModel) tblTokens.getModel();
+    modeloTabla.setRowCount(0);
 
-        String codigoFuente = txtEntrada.getText();
-        String[] lineas = codigoFuente.split("\\r?\\n");
-        Analizador analizador = new Analizador();
+    String[] lineas = txtEntrada.getText().split("\\r?\\n");
+    Analizador analizador = new Analizador();
 
-        boolean enIf = false;
-        boolean ejecutarBloque = false;
-        int nivelLlaves = 0;
+    boolean enBloque = false;
+    int nivelLlaves = 0;
 
-        for (int i = 0; i < lineas.length; i++) {
-            String linea = lineas[i].trim();
-            if (linea.isEmpty() || linea.startsWith("%")) {
+    // Estado del último SI
+    boolean ultimoSiFueTrue = false;
+    boolean esperandoSino = false;
+
+    // Estado del bloque que se está ejecutando en este momento
+    boolean ejecutarBloqueActual = true;
+
+    for (int i = 0; i < lineas.length; i++) {
+        String linea = lineas[i].trim();
+        if (linea.isEmpty() || linea.startsWith("%")) continue;
+
+        try {
+            // Gramática por línea
+            String g = analizador.gramaticaDeLinea(linea);
+            if (g != null && !g.isEmpty()) txtGramatica.append(g + "\n");
+
+            // Tokens
+            for (FilaToken ft : analizador.obtenerTokensLexicos(linea)) {
+                modeloTabla.addRow(new Object[]{ ft.token, ft.lexema, ft.patron, ft.reservada });
+            }
+
+            if (analizador.esLineaCierreMasSino(linea)) {
+                // cerrar el bloque anterior (SI) si estaba abierto
+                if (enBloque) {
+                    // este cierre corresponde al bloque SI
+                    analizador.terminarBloque(ejecutarBloqueActual);
+                    enBloque = false;
+                    nivelLlaves = 0;
+                } else {
+                    // puede lanzar error.
+                }
+
+                // abrir bloque SINO
+                if (!esperandoSino) {
+                    throw new ExcepcionSintactica("Bloque 'sino' sin un 'si' previo.");
+                }
+
+                analizador.iniciarBloque();
+                enBloque = true;
+                nivelLlaves = 1;
+
+                ejecutarBloqueActual = !ultimoSiFueTrue; // si fue true, else NO ejecuta
+                esperandoSino = false;
+
+                txtSalida.append("SINO (" + (ejecutarBloqueActual ? "ejecuta" : "omite") + ")\n");
+                txtSalida.append("--------------------------------------------------\n");
+                continue;
+            }
+            
+            if (!enBloque && analizador.esLineaSi(linea)) {
+                boolean cond = analizador.evaluarCondicionSi(linea);
+
+                analizador.iniciarBloque();
+                enBloque = true;
+                nivelLlaves = 1;
+
+                ultimoSiFueTrue = cond;
+                esperandoSino = true;
+                ejecutarBloqueActual = cond;
+
+                txtSalida.append("SI (" + (cond ? "true" : "false") + ")\n");
+                txtSalida.append("--------------------------------------------------\n");
                 continue;
             }
 
-            try {
-                String g = analizador.gramaticaDeLinea(linea);
-                if (!g.isEmpty()) {
-                    txtGramatica.append(g + "\n");
-                }
+            if (!enBloque && analizador.esLineaSino(linea)) {
+                if (!esperandoSino) throw new ExcepcionSintactica("Bloque 'sino' sin un 'si' previo.");
 
-                if (!enIf && linea.startsWith("if")) {
-                    boolean condicion = analizador.evaluarCondicionIf(linea);
+                analizador.validarSinoHeader(linea);
+                analizador.iniciarBloque();
 
-                    enIf = true;
-                    ejecutarBloque = condicion;
-                    nivelLlaves = 1;
+                enBloque = true;
+                nivelLlaves = 1;
 
-                    txtSalida.append("IF (" + (condicion ? "true" : "false") + ")\n");
+                ejecutarBloqueActual = !ultimoSiFueTrue;
+                esperandoSino = false;
+
+                txtSalida.append("SINO (" + (ejecutarBloqueActual ? "ejecuta" : "omite") + ")\n");
+                txtSalida.append("--------------------------------------------------\n");
+                continue;
+            }
+
+            if (enBloque) {
+                // solo contamos { } de líneas internas
+                if (linea.contains("{")) nivelLlaves++;
+                if (linea.contains("}")) nivelLlaves--;
+
+                // ¿cerró bloque?
+                if (nivelLlaves <= 0) {
+                    analizador.terminarBloque(ejecutarBloqueActual);
+                    enBloque = false;
+                    nivelLlaves = 0;
+
+                    txtSalida.append("FIN BLOQUE\n");
                     txtSalida.append("--------------------------------------------------\n");
                     continue;
                 }
 
-                if (enIf) {
-                    if (linea.contains("{")) {
-                        nivelLlaves++;
-                    }
-                    if (linea.contains("}")) {
-                        nivelLlaves--;
-                    }
-
-                    if (nivelLlaves <= 0) {
-                        enIf = false;
-                        ejecutarBloque = false;
-                        nivelLlaves = 0;
-
-                        txtGramatica.append("(<identificador> : <break>)\n");
-
-                        txtSalida.append("FIN IF\n");
-                        txtSalida.append("--------------------------------------------------\n");
-                        continue;
-                    }
-
-                    if (!ejecutarBloque) {
-                        continue; // si if false, no procesa tokens ni semántica
-                    }
+                // si este bloque no se ejecuta, ignorar contenido
+                if (!ejecutarBloqueActual) {
+                    continue;
                 }
-
-                List<FilaToken> tokens = analizador.obtenerTokensLexicos(linea);
-                for (FilaToken ft : tokens) {
-                    modeloTabla.addRow(new Object[]{ft.token, ft.lexema, ft.patron, ft.reservada});
-                    txtSalida.append(String.format("%-15s %s\n", ft.lexema, ft.token));
-                }
-
-                analizador.procesarLineaFrame(linea);
-
-                txtSalida.append("--------------------------------------------------\n");
-
-            } catch (Exception e) {
-                txtSalida.append("---> " + e.getMessage() + "\n");
-                txtSalida.append("--------------------------------------------------\n");
             }
+
+            if (!enBloque && (analizador.esSoloLlaveApertura(linea) || analizador.esSoloLlaveCierre(linea))) {
+                continue;
+            }
+
+            // Mostrar tokens en salida
+            List<FilaToken> tokens = analizador.obtenerTokensLexicos(linea);
+            for (FilaToken ft : tokens) {
+                txtSalida.append(String.format("%-15s %s\n", ft.lexema, ft.token));
+            }
+
+            String ok = analizador.procesarAsignacion(linea);
+            if (ok != null && !ok.isEmpty()) txtSalida.append(ok + "\n");
+
+            txtSalida.append("--------------------------------------------------\n");
+
+        } catch (Exception e) {
+            txtSalida.append("---> " + e.getMessage() + "\n");
+            txtSalida.append("--------------------------------------------------\n");
         }
     }
+}
     
     /**
      * @param args the command line arguments
